@@ -1,7 +1,8 @@
 # Import necessary modules
 import streamlit as st
 import streamlit.components.v1 as components  # For embedding custom HTML
-from generate_knowledge_graph import generate_knowledge_graph
+from generate_knowledge_graph import generate_knowledge_graph, generate_csv_data
+import pandas as pd
 
 # Set up Streamlit page configuration
 st.set_page_config(
@@ -34,16 +35,53 @@ if input_method == "Upload txt":
         if st.sidebar.button("Generate Knowledge Graph"):
             with st.spinner("Generating knowledge graph..."):
                 # Call the function to generate the graph from the text
-                net = generate_knowledge_graph(text)
+                net, graph_documents = generate_knowledge_graph(text)
                 st.success("Knowledge graph generated successfully!")
+                
+                # Store graph documents in session state for CSV download
+                st.session_state['graph_documents'] = graph_documents
                 
                 # Save the graph to an HTML file
                 output_file = "knowledge_graph.html"
                 net.save_graph(output_file) 
 
-                # Open the HTML file and display it within the Streamlit app
+                # Store graph HTML content in session state
                 HtmlFile = open(output_file, 'r', encoding='utf-8')
-                components.html(HtmlFile.read(), height=1000)
+                graph_html = HtmlFile.read()
+                st.session_state['graph_html'] = graph_html
+                HtmlFile.close()
+                
+                # Display the graph
+                components.html(graph_html, height=1000)
+                
+        # Add CSV download buttons if graph has been generated
+        if 'graph_documents' in st.session_state:
+            st.sidebar.markdown("---")
+            st.sidebar.subheader("Download Graph Data")
+            
+            nodes_csv, edges_csv = generate_csv_data(st.session_state['graph_documents'])
+            
+            col1, col2 = st.sidebar.columns(2)
+            with col1:
+                st.download_button(
+                    label="📊 Points CSV",
+                    data=nodes_csv,
+                    file_name="points.csv",
+                    mime="text/csv",
+                    key="download_nodes_1"
+                )
+            with col2:
+                st.download_button(
+                    label="🔗 Links CSV",
+                    data=edges_csv,
+                    file_name="links.csv",
+                    mime="text/csv",
+                    key="download_edges_1"
+                )
+            
+            # Re-display the graph if it exists in session state
+            if 'graph_html' in st.session_state:
+                components.html(st.session_state['graph_html'], height=1000)
 
 # Case 2: User chooses to directly input text
 else:
@@ -54,13 +92,50 @@ else:
         if st.sidebar.button("Generate Knowledge Graph"):
             with st.spinner("Generating knowledge graph..."):
                 # Call the function to generate the graph from the input text
-                net = generate_knowledge_graph(text)
+                net, graph_documents = generate_knowledge_graph(text)
                 st.success("Knowledge graph generated successfully!")
+                
+                # Store graph documents in session state for CSV download
+                st.session_state['graph_documents'] = graph_documents
                 
                 # Save the graph to an HTML file
                 output_file = "knowledge_graph.html"
                 net.save_graph(output_file) 
 
-                # Open the HTML file and display it within the Streamlit app
+                # Store graph HTML content in session state
                 HtmlFile = open(output_file, 'r', encoding='utf-8')
-                components.html(HtmlFile.read(), height=1000)
+                graph_html = HtmlFile.read()
+                st.session_state['graph_html'] = graph_html
+                HtmlFile.close()
+                
+                # Display the graph
+                components.html(graph_html, height=1000)
+                
+        # Add CSV download buttons if graph has been generated
+        if 'graph_documents' in st.session_state:
+            st.sidebar.markdown("---")
+            st.sidebar.subheader("Download Graph Data")
+            
+            nodes_csv, edges_csv = generate_csv_data(st.session_state['graph_documents'])
+            
+            col1, col2 = st.sidebar.columns(2)
+            with col1:
+                st.download_button(
+                    label="📊 Points CSV",
+                    data=nodes_csv,
+                    file_name="points.csv",
+                    mime="text/csv",
+                    key="download_nodes_2"
+                )
+            with col2:
+                st.download_button(
+                    label="🔗 Links CSV",
+                    data=edges_csv,
+                    file_name="links.csv",
+                    mime="text/csv",
+                    key="download_edges_2"
+                )
+            
+            # Re-display the graph if it exists in session state
+            if 'graph_html' in st.session_state:
+                components.html(st.session_state['graph_html'], height=1000)

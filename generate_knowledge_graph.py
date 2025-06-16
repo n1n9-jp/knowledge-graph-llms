@@ -6,6 +6,8 @@ from pyvis.network import Network
 from dotenv import load_dotenv
 import os
 import asyncio
+import pandas as pd
+import io
 
 
 # Load the .env file
@@ -120,8 +122,54 @@ def generate_knowledge_graph(text):
         text (str): Input text to convert into a knowledge graph.
 
     Returns:
-        pyvis.network.Network: The visualized network graph object.
+        tuple: A tuple containing (pyvis.network.Network, graph_documents)
     """
     graph_documents = asyncio.run(extract_graph_data(text))
     net = visualize_graph(graph_documents)
-    return net
+    return net, graph_documents
+
+
+def generate_csv_data(graph_documents):
+    """
+    Generates CSV data from graph documents.
+
+    Args:
+        graph_documents (list): A list of GraphDocument objects with nodes and relationships.
+
+    Returns:
+        tuple: A tuple containing (nodes_csv_string, edges_csv_string)
+    """
+    if not graph_documents or len(graph_documents) == 0:
+        return "", ""
+    
+    nodes = graph_documents[0].nodes
+    relationships = graph_documents[0].relationships
+    
+    # Create nodes DataFrame
+    nodes_data = []
+    for node in nodes:
+        node_dict = {
+            'ID': node.id,
+            'Group': node.type if hasattr(node, 'type') else ''
+        }
+        nodes_data.append(node_dict)
+    
+    nodes_df = pd.DataFrame(nodes_data)
+    
+    # Create edges DataFrame
+    edges_data = []
+    for rel in relationships:
+        edge_dict = {
+            'Source': rel.source.id,
+            'Target': rel.target.id,
+            'Value': rel.type if hasattr(rel, 'type') else ''
+        }
+        edges_data.append(edge_dict)
+    
+    edges_df = pd.DataFrame(edges_data)
+    
+    # Convert to CSV strings
+    nodes_csv = nodes_df.to_csv(index=False, encoding='utf-8')
+    edges_csv = edges_df.to_csv(index=False, encoding='utf-8')
+    
+    return nodes_csv, edges_csv
